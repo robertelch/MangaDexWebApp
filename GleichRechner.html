@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Gleich-Rechner</title>
+  </head>
+  <body>
+    <h1>Gleich™ Rechner</h1>
+    <label for="fname" onclick="displayNumber(this.textContent)">Wie oft wurde "Gleich" geschrieben?:</label>
+    <input type="text" id="fname" name="fname">
+    <br>
+    <br>
+    <button onclick="displayNumber(fname.value)" style="height:40px;width:200px">Berechne wie viel Zeit gemeint ist</button>
+    <p id="result"></p>
+  </body>
+  <script>
+    function displayNumber(value) {
+      let x = parseInt(value);
+      if (x !== x) {
+        document.getElementById("result").textContent = "Das ist keine Zahl, bist du blöd?"
+      } else {
+        document.getElementById("result").textContent = "Es dauert noch etwa " + value * value * value + " Stunden";
+      }
+    }
+  </script>
+</html>
