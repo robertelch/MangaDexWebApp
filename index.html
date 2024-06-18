@@ -43,7 +43,7 @@
     <input placeholder="Manga Title" type="text" id="titleInput">
     <button onclick="getManga()">Search</button>
     <ul id="mangaList"></ul>
-    <div id="reader">
+    <div class="overlay" id="reader">
       <img id="pageIMG" alt="pageIMG">
       <div class="container">
         <button onclick="previousPage()"><- Previous Page</button>
@@ -129,11 +129,11 @@
     
     function populateImages(resultJson) {
         let results = resultJson.chapter.data;
-        let dataUrl = resultJson.baseUrl + "/data-saver/" + resultJson.chapter.hash + "/";
+        let dataUrl = resultJson.baseUrl + "/data/" + resultJson.chapter.hash + "/";
         currentDataUrl = dataUrl;
         currentPageIds = results;
         currentPage = 0;
-        A.getElementById("pageIMG").src = dataUrl + results[currentPage];
+        A.getElementById("pageIMG").src = CORS_PROXY + dataUrl + results[currentPage];
     }
     
     function nextPage() {
