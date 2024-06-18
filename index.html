@@ -3,58 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Manga Search</title>
     <style>
         .center {
-        text-align: center;
-        margin: auto;
-        height: 100%;
-        align-items: normal;
+            text-align: center;
+            margin: auto;
+            height: 100%;
+            align-items: normal;
         }
         .img-center {
-        text-align: center;
-        margin: auto;
-        height: 100%;
-        display: flex;
-        align-items: stretch;
+            text-align: center;
+            margin: auto;
+            height: auto;
+            max-width: 100%;
+
+            display: flex;
+            align-items: stretch;
         }
         .center img {
-        display: block; /* Ensures the image behaves as a block element */
-        margin: auto; /* Remove default margin */
-        padding: 0; /* Remove default padding */
+            display: block;
+            max-width: 100%;
+
+            margin: auto;
+            padding: 0;
         }
         .test {
-        text-align: left;   /* Align text inside the list items to the left */
-        margin: 0 auto;     /* Center the entire list horizontally */
-        width: max-content; /* Optionally set width to max-content for compactness */
+            text-align: left;
+            margin: 0 auto;
+            width: max-content;
         }
         .overlay {
-        margin: auto;
-        position: fixed; /* Fixed positioning relative to the viewport */
-        top: 0;
-        left: 0;
-        width: 100%; /* Full width of the viewport */
-        height: 95%; /* Full height of the viewport */
-        background-color: rgb(255, 255, 255); /* Semi-transparent black background */
-        z-index: 1000; /* Ensures the overlay is on top of other content */
-        display: none;
-        align-items: center;
+            margin: auto;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgb(255, 255, 255);
+            z-index: 1000;
+            display: none;
+            align-items: center;
         }
         .button-container {
-        display: flex; /* Use flexbox */
-        width: 100%; /* Take up full width of the parent (.center) */
+            display: flex;
+            width: 100%;
         }
         .button-container button {
-        flex: 1; /* Each button takes up equal space */
-        height: 5vh;
-        margin: 0px; /* Optional: Adjust margin as needed */
+            flex: 1;
+            height: 5vh;
+            margin: 0px;
         }
     </style>
-
 </head>
 <body>
-<div class="overlay" id="ttt" style.display="none">
+<div class="overlay" id="ttt">
     <div class="center">
         <img class="img-center" id="pageIMG" alt="pageIMG">
         <div class="button-container">
@@ -62,119 +64,112 @@
             <button onclick="hideOverlay()">Menu</button>
             <button onclick="nextPage()">Next Page -></button>
         </div>
-        </img>
     </div>
 </div>
 <div class="center">
     <h1>Manga Search</h1>
     <label for="titleInput">Enter Title:</label>
-    <input onchange="getManga()" type="text" id="titleInput">
-    <button onclick="nextPage()">Search</button>
+    <input type="text" id="titleInput">
+    <button onclick="getManga()">Search</button>
     <ul id="mangaList" class="test"></ul>
 </div>
 <script>
-    // CORS Proxy URL
-    const CORS_PROXY = 'https://corsproxy.io/?';
+    window.onload = function() {
+        const CORS_PROXY = 'https://corsproxy.io/?';
 
-    // Some shortcuts for common and generic functions
-    var J = JSON, r = J.parse, s = J.stringify, A = document;
-
-    var D = function(p) { return A.getElementById(p); };
-    var C = function(p) { return A.createElement(p); };
-    var q = function(m, p, c) {
-        var x = new XMLHttpRequest();
-        x.open(m, CORS_PROXY + p, true);
-        x.onreadystatechange = function() {
-            if (x.readyState == 4 && x.status == 200) {
-                c(r(x.responseText));
-            }
+        var J = JSON, r = J.parse, s = J.stringify, A = document;
+        var D = function(p) { return A.getElementById(p); };
+        var C = function(p) { return A.createElement(p); };
+        var q = function(m, p, c) {
+            var x = new XMLHttpRequest();
+            x.open(m, CORS_PROXY + p, true);
+            x.onreadystatechange = function() {
+                if (x.readyState == 4 && x.status == 200) {
+                    c(r(x.responseText));
+                }
+            };
+            return x;
         };
-        return x;
+
+        function G(p, c) {
+            var x = q("GET", p, c);
+            x.send();
+        }
+
+        var currentChapterJson;
+        var currentMangaJson;
+        var currentChapterUrl;
+        var currentPage;
+        var currentChapter;
+        
+        window.getManga = function() {
+            let x = G("https://api.mangadex.org/manga?title=" + encodeURIComponent(D("titleInput").value) + "&limit=100", populateResults);
+            console.log(x);
+        }
+
+        function populateResults(resultJson) {
+            let mangaList = D("mangaList");
+            mangaList.innerHTML = ""; // Clear the list first
+            let results = resultJson.data;
+            results.forEach(manga => {
+                let li = C("li");
+                li.textContent = manga.attributes.title.en || "No title";
+                li.style.cursor = "pointer";
+                li.addEventListener("click", function() {
+                    currentMangaJson = G("https://api.mangadex.org/manga/" + manga.id + "/feed?translatedLanguage[]=en&order[volume]=asc&order[chapter]=asc&includeFuturePublishAt=0&includeExternalUrl=0", populateChapters);
+                });
+                mangaList.appendChild(li);
+            });
+        }
+
+        function populateChapters(resultJson) {
+            currentChapter = 0;
+            currentMangaJson = resultJson;
+            let chapterList = D("mangaList");
+            currentMangaJson = [];
+            chapterList.innerHTML = ""; // Clear the list first
+            let results = resultJson.data;
+            results.forEach(chapter => {
+                let li = C("li");
+                currentMangaJson.push("https://api.mangadex.org/at-home/server/" + chapter.id);
+                li.textContent = "Chapter:" + chapter.attributes.chapter + " " + chapter.attributes.title || "No title";
+                li.style.cursor = "pointer";
+                li.addEventListener("click", function() {
+                    A.getElementById("ttt").style.display = "block";
+                    G("https://api.mangadex.org/at-home/server/" + chapter.id, populateImages);
+                });
+                chapterList.appendChild(li);
+            });
+        }
+
+        function populateImages(resultJson) {
+            let results = resultJson.chapter.data;
+            let imageURL = resultJson.baseUrl + "/data/" + resultJson.chapter.hash + "/";
+            currentChapterUrl = imageURL;
+            currentChapterJson = results;
+            currentPage = 0;
+            A.getElementById("pageIMG").src = imageURL + results[currentPage];
+        }
+
+        window.nextPage = function() {
+            currentPage += 1;
+            if (currentPage >= currentChapterJson.length) {
+                currentChapter += 1;
+                G(currentMangaJson[currentChapter], populateImages);
+            } else {
+                A.getElementById("pageIMG").src = currentChapterUrl + currentChapterJson[currentPage];
+            }
+        }
+
+        window.previousPage = function() {
+            currentPage -= 1;
+            A.getElementById("pageIMG").src = currentChapterUrl + currentChapterJson[currentPage];
+        }
+
+        window.hideOverlay = function() {
+            A.getElementById("ttt").style.display = "none";
+        }
     };
-
-    function G(p, c) {
-        var x = q("GET", p, c);
-        x.send();
-    }
-    function P(p, d, c) {
-        var x = q("POST", p, c);
-        x.setRequestHeader("Content-type", "application/json");
-        x.send(s(d));
-    }
-    var currentChapterJson;
-    var currentMangaJson;
-    var currentChapterUrl;
-    var currentPage;
-    var currentChapter;
-    function getManga()
-    {
-       let x = G("https://api.mangadex.org/manga?title=" + encodeURIComponent(D("titleInput").value) + "&limit=100", populateResults);
-       console.log(x)
-    }
-
-    function populateResults(resultJson) {
-        let mangaList = D("mangaList");
-        mangaList.innerHTML = ""; // Clear the list first
-        let results = resultJson.data;
-        results.forEach(manga => {
-            let li = C("li");
-            li.textContent = manga.attributes.title.en || "No title";
-            li.style.cursor = "pointer"; // Change the cursor to pointer to indicate it's clickable
-            li.addEventListener("click", function() {
-                //alert("You clicked on " + manga.id);
-                currentMangaJson = G("https://api.mangadex.org/manga/" + manga.id + "/feed?translatedLanguage[]=en&order[volume]=asc&order[chapter]=asc&includeFuturePublishAt=0&includeExternalUrl=0", populateChapters);
-                // You can also perform other actions here, such as redirecting to another page, fetching more details, etc.
-            });
-            mangaList.appendChild(li);
-        });
-    }
-    function populateChapters(resultJson) {
-       currentChapter = 0;
-       currentMangaJson = resultJson;
-        let chapterList = D("mangaList");
-        currentMangaJson = []
-        chapterList.innerHTML = ""; // Clear the list first
-        let results = resultJson.data;
-        results.forEach(chapter => {
-            let li = C("li");
-            currentMangaJson.push("https://api.mangadex.org/at-home/server/" + chapter.id)
-            li.textContent = "Chapter:" + chapter.attributes.chapter + " " + chapter.attributes.title || "No title";
-            li.style.cursor = "pointer"; // Change the cursor to pointer to indicate it's clickable
-            li.addEventListener("click", function() {
-                //alert("You clicked on " + chapter.id);
-                A.getElementById("ttt").style.display = "block";
-                G("https://api.mangadex.org/at-home/server/" + chapter.id, populateImages)
-                // You can also perform other actions here, such as redirecting to another page, fetching more details, etc.
-            });
-            chapterList.appendChild(li);
-        });
-    }
-    function populateImages(resultJson) {
-        let results = resultJson.chapter.data;
-        let imageURL = resultJson.baseUrl + "/data/" + resultJson.chapter.hash + "/";
-        currentChapterUrl = imageURL;
-        currentChapterJson = results;
-        currentPage = 0;
-        A.getElementById("pageIMG").src = imageURL + results[currentPage];
-    }
-    function nextPage(){
-       currentPage += 1;
-       if(currentPage >= currentChapterJson.length)
-       {
-           currentChapter += 1;
-           G(currentMangaJson[currentChapter], populateImages)
-
-       }
-       A.getElementById("pageIMG").src = currentChapterUrl + currentChapterJson[currentPage];
-    }
-    function previousPage(){
-       currentPage -= 1;
-       A.getElementById("pageIMG").src = currentChapterUrl + currentChapterJson[currentPage];
-    }
-    function hideOverlay(){
-       A.getElementById("ttt").style.display = "none";
-    }
-
 </script>
 </body>
 </html>
